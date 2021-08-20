@@ -21,7 +21,7 @@ public class CurrentAccountServiceImpl implements CurrentAccountService {
 	private final WebClient webClient;
 	private final ReactiveCircuitBreaker reactiveCircuitBreaker;
 
-    String uri = "http://localhost:8090/api";
+    String uri = "http://gateway:8090/api";
     
 	public CurrentAccountServiceImpl(ReactiveResilience4JCircuitBreakerFactory circuitBreakerFactory) {
 		this.webClient = WebClient.builder().baseUrl(this.uri).build();
