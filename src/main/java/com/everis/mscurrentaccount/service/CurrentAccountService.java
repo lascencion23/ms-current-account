@@ -20,9 +20,14 @@ public interface CurrentAccountService {
 
     Mono<Long> countCustomerAccountBank(String id);
 
+    Flux<CurrentAccount> customerAccountBank(String id);
+    
     Mono<Customer> findCustomerById(String id);
 
     Flux<CreditCard> findCreditCardByCustomerId(String id);
     
-    Mono<CurrentAccount> findByCardNumber(String number);
+    Mono<CurrentAccount> findByAccountNumber(String number);
+    
+    Mono<Long> creditExpiredById(String id);
+    
 }
