@@ -34,46 +34,47 @@ public class CurrentAccountController {
 
     @PostMapping("/create")
     public Mono<ResponseEntity<CurrentAccount>> create(@Valid @RequestBody CurrentAccount currentAccount){
-        // VERIFICAMOS SI EXISTE EL CLIENTE
-        return currentAccountService.findCustomerById(currentAccount.getCustomer().getId())
-                .flatMap(cst -> {
-                    return currentAccountService.countCustomerAccountBank(currentAccount.getCustomer().getId()) // Mono<Long> # Cuentas bancarias del Cliente
-                        .filter(count -> {
-                            switch (cst.getTypeCustomer().getValue()){
-                                case PERSONAL:
-                                    return count < 1; // max 1 Cuenta por Cliente PERSONAL
+        // VERIFICAMOS SI EXISTE EL CLIENTE		
+		   
+			   return currentAccountService.creditExpiredById(currentAccount.getCustomer().getId())
+			   			.filter(count -> (count > 0)? false : true)
+			   			.flatMap(lg -> currentAccountService.findCustomerById(currentAccount.getCustomer().getId()))
+			   			.flatMap(cus -> {
+			   				return currentAccountService.countCustomerAccountBank(cus.getId())
+				   			.filter(count -> {
+				             switch (cus.getTypeCustomer().getValue()){
+				                 case PERSONAL:
+				                     return count < 1; // max 1 Cuenta por Cliente PERSONAL
+				
+				                 case EMPRESARIAL:
+				                     return currentAccount.getHolders() != null & currentAccount.getHolders().size() > 0; // Cliente EMPRESARIAL debe tener 1 o mas titulares
+				
+				                 default: return false;
+				             }
+				         }).flatMap(c -> {
+                          switch (cus.getTypeCustomer().getValue()){
+                              case EMPRESARIAL:
+                                  switch (cus.getTypeCustomer().getSubType().getValue()){
+                                      case PYME: return currentAccountService.findCreditCardByCustomerId(cus.getId())
+                                              .count()
+                                              .filter(cntCCard -> cntCCard > 0)
+                                              .flatMap(cntCCard -> {
+                                                  currentAccount.setCustomer(cus);
+                                                  currentAccount.setDate(LocalDateTime.now());
+                                                  currentAccount.setCommissionMaintenance(0.0);
+                                                  return currentAccountService.create(currentAccount);
+                                              });
+                                  }
 
-                                case EMPRESARIAL:
-                                    return currentAccount.getHolders() != null & currentAccount.getHolders().size() > 0; // Cliente EMPRESARIAL debe tener 1 o mas titulares
+                              default: currentAccount.setCustomer(cus);
+                                      currentAccount.setDate(LocalDateTime.now());
+                                      return currentAccountService.create(currentAccount); // Mono<CurrentAccount>
+                          }
 
-                                default: return false;
-                            }
-                        })
-                        .flatMap(c -> {
-                            switch (cst.getTypeCustomer().getValue()){
-                                case EMPRESARIAL:
-                                    switch (cst.getTypeCustomer().getSubType().getValue()){
-                                        case PYME: return currentAccountService.findCreditCardByCustomerId(cst.getId())
-                                                .count()
-                                                .filter(cntCCard -> cntCCard > 0)
-                                                .flatMap(cntCCard -> {
-                                                    currentAccount.setCustomer(cst);
-                                                    currentAccount.setDate(LocalDateTime.now());
-                                                    currentAccount.setCommissionMaintenance(0.0);
-                                                    return currentAccountService.create(currentAccount);
-                                                });
-                                    }
-
-                                default: currentAccount.setCustomer(cst);
-                                        currentAccount.setDate(LocalDateTime.now());
-                                        return currentAccountService.create(currentAccount); // Mono<CurrentAccount>
-                            }
-
-                        });
-                })
-                .map(ca -> new ResponseEntity<>(ca, HttpStatus.CREATED))
-                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
-
+                      });
+			   			
+			   			}).map(d -> new ResponseEntity<>(d, HttpStatus.CREATED))
+			   			  .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
     }
 
     @PutMapping("/update")
@@ -114,9 +115,14 @@ public class CurrentAccountController {
     
     @GetMapping("/findByAccountNumber/{number}")
     public Mono<CurrentAccount> findByAccountNumber(@PathVariable String number){
-        return currentAccountService.findByCardNumber(number);
+        return currentAccountService.findByAccountNumber(number);
     }
-
+    
+    @GetMapping("/findAccountByCustomerId/{id}")
+    public Flux<CurrentAccount> findByCustomerAccounts(@PathVariable String id) {
+    	return currentAccountService.customerAccountBank(id);
+    }
+    
     @PutMapping("/updateTransference")
     public Mono<ResponseEntity<CurrentAccount>> updateForTransference(@Valid @RequestBody CurrentAccount currentAccount) {
         return currentAccountService.create(currentAccount)
