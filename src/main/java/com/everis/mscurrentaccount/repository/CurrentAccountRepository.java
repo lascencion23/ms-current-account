@@ -10,5 +10,5 @@ import reactor.core.publisher.Mono;
 public interface CurrentAccountRepository extends ReactiveMongoRepository<CurrentAccount, String> {
 
     public Flux<CurrentAccount> findByCustomerId(String id);
-    Mono<CurrentAccount> findByCardNumber(String number);
+    Mono<CurrentAccount> findByAccountNumber(String number);
 }
