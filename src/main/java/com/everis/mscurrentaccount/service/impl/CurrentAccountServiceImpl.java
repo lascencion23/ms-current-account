@@ -69,6 +69,7 @@ public class CurrentAccountServiceImpl implements CurrentAccountService {
 
 	@Override
 	public Mono<CurrentAccount> create(CurrentAccount t) {
+		t.setAccountNumber(CurrentAccount.generateAccountNumber());
 		return currentAccountRepository.save(t);
 	}
 

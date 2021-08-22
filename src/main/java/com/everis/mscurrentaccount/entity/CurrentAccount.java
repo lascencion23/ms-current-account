@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -36,4 +37,10 @@ public class CurrentAccount {
     private Double balance;
 
     private LocalDateTime date;
+
+    public static String generateAccountNumber() {
+        final String ACCOUNT_PREFIX = "300-";
+        Random random = new Random();
+        return ACCOUNT_PREFIX + random.nextInt(999999999);
+    }
 }
